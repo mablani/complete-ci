@@ -2,9 +2,9 @@
 name: CI
 on:
   pull_request:
-    branches: [develop]
+    branches: [develop, main]
   push:
-    branches: [develop]
+    branches: [develop, main]
     
 jobs:
   build:
@@ -40,9 +40,27 @@ jobs:
         with:
           name: build
           path: build  
+      - name: Create a release
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: npx semantic-release
+        env:
+           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Desplegar a preproducion
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
         env:
           SURGE_LOGIN: ${{ secrets.SURGE_LOGIN }}
           SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
-        run: npx surge --project ./build --domain spicy-week.surge.sh
+        run: npx surge --project --project ./build --domain  spicy-week.surge.sh
+
+      - name: Desplegar a producción
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        env:
+          SURGE_LOGIN: ${{ secrets.SURGE_LOGIN }}
+          SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
+        run: npx surge --project --project ./build --domain thoughtless-pancake.surge.sh
+
+      - name: Upload Coverage Report
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: npx codecov
+        env: 
+           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
